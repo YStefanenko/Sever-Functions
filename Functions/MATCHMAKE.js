@@ -24,7 +24,7 @@ export default {
         queuev4.put(Player);
         break;
       case `v34`:
-        queuev4.put(Player);
+        queuev34.put(Player);
         break;
     }
   }
