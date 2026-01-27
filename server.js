@@ -14,7 +14,7 @@ import { queue1v1, queuev3, queuev4, queuev34 } from "./queue.js";
 
 dotenv.config();
 
-const PORT = 1000;
+const PORT = process.env.port;
 const TICK_INTERVAL = 10000;
 const thisIP =`${process.env.this_IP}`;
 
