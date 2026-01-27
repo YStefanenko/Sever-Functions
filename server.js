@@ -24,7 +24,7 @@ let centralWS = null;
 const wss = new WebSocketServer({ port: PORT });
 connectToCentralServer();
 
-console.log(`WebSocket server running on ${wss._server.address().address}:${PORT}`);
+console.log(`WebSocket server running on ${PORT}`);
 
 wss.funcs = new Map();
 const dbFunctionsLoad = fs.readdirSync("./Functions").filter(file => file.endsWith(".js"));
