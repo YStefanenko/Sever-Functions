@@ -1,0 +1,234 @@
+import { activeMatches } from "./match_manager.js";
+import { CONNECTED_IPS } from "./globalVariables.js";
+import { sendToCentral } from "./server.js";
+
+export class Match {
+    constructor(id, mode, players) {
+        this.id = id;
+        this.mode = mode;
+        this.players = players;
+        this.activePlayers = new Map();
+        this.running = false;
+        this.tickRate = 997;
+        this.interval = null;
+        this.messages = [];
+        this.peaceTick = 20;
+        this.peaceOngoing = true;
+        this.endInfo = null;
+        this.resolveEndInfo = null;
+    }
+
+    async start() {
+        console.log(`Starting ${this.mode} match with`, this.players.map(p => p.username));
+
+        this.running = true;
+
+        await this.setup();
+
+        this.loop();
+    }
+
+    async setup() {
+        var mapNum;
+        if(this.mode === "1v1") mapNum = rand(1, 30);
+        else if(this.mode === "v3") mapNum = rand(31, 33);
+        else if(this.mode === "v4") mapNum = rand(37, 39);
+
+        const playerNameList = [];
+        for (const p of this.players) {
+            var playerName;
+            if(p.title != null){
+                playerName = `${p.username} [${p.title}]`;
+            }else{
+                playerName = `${p.username}`;
+            }
+            const playerList = [playerName];
+            playerNameList.push(playerList);
+
+            this.activePlayers.set(p.username, {peace: false});
+        }
+
+        var i = 0;
+        for (const p of this.players) {
+            await sendToPlayer(p.ws, { type: "match_start", content: {color: i, map: String(mapNum), players: playerNameList }});
+            i++;
+        }
+    }
+
+    loop() {
+        this.interval = setInterval(async () => {
+            if (!this.running) return;
+
+            try {
+                await this.tick();
+            } catch (err) {
+                console.error("Match loop error:", err);
+                this.end(`error`);
+            }
+        }, this.tickRate);
+    }
+
+    async tick() {
+        //TICK SETUP
+        const allMessages = this.messages;
+        this.messages = [];
+
+        if(this.peaceOngoing){
+            if(this.peaceTick <= 0){
+                this.peaceOngoing = false;
+                this.peaceTick = 20;
+            }else{
+                this.peaceTick -= 1;
+            }
+        }
+
+        //DISCONNECT DETECTION
+        for (const p of this.players) {
+            if (!(await isConnected(p))) {
+                this.activePlayers.delete(p.username);
+                this.players = this.players.filter(player => player.username !== p.username);
+            }
+        }
+
+        //TICK
+        try{
+            for (const orderDict of allMessages) {
+              for (const [key, value] of Object.entries(orderDict)) {
+                  if (key === "game_end") {
+                    console.log(`GAME END`);
+                    const playerIndex = value.player_index;
+                    const [username, data] = Array.from(this.activePlayers)[playerIndex];
+                    this.endInfo = value.stats;
+                    this.end(`domination`, username);
+                    return;
+                  }
+                  if(key === "surrender"){
+                    console.log(`SURRENDER`);
+                    const playerIndex = value.player_index;
+                    const [username, data] = Array.from(this.activePlayers)[playerIndex];
+                    this.activePlayers.delete(username);
+                  }
+                  if (key === "peace") {
+                    console.log("PEACE");
+                    const playerIndex = value.player_index;
+                    const [username, data] = Array.from(this.activePlayers)[playerIndex];
+                    this.peaceTick = 20;
+                    this.peaceOngoing = true;
+                    const player = this.activePlayers.get(username);
+                    if (player) player.peace = true;
+                  }
+                }
+            }
+        }catch{}
+
+        //WIN CONDITIONS
+        if(this.peaceOngoing){
+            var peaceNum = 0;
+            for (const [username, data] of this.activePlayers) {
+              if(data.peace){
+                peaceNum++;
+              }
+            }
+
+            if(peaceNum === this.activePlayers.size){
+                this.end(`peace`);
+                return;
+            }
+        }
+
+        if(this.activePlayers.size === 1){
+            this.end(`domination`);
+            return;
+        }
+        
+
+        //SENDING ALL DATA TO USERS
+        const data = Object.assign({}, ...allMessages);
+        console.log("Shit: " + Object.entries(data));
+
+        for (const p of this.players) {
+            await sendToPlayer(p.ws, { content: data });
+        }
+    }
+
+    async end(condition, winner = null) {
+        if (!this.running) return;
+
+        if(condition === "error"){
+            for (const p of this.players) {
+                p.ws.close(1000, "Match Ended");
+            }
+
+            activeMatches.delete(this.id);
+            return;
+        }
+
+        this.running = false;
+
+        clearInterval(this.interval);
+
+        if(condition === "domination" && winner === null){
+            winner = this.activePlayers.keys().next().value;
+        }
+
+        for (const p of this.players) {
+            var value;
+            if(winner === p.username) value = 1;
+            if(winner != p.username) value = 0;
+            if(condition === `peace`) value = 0.5;
+            await sendToPlayer(p.ws, { content: {match_over: value}});
+        }
+
+        console.log(`Ending ${this.mode} match with winner ${winner}`);
+
+        if(this.endInfo === null){
+            await new Promise(resolve => {
+                this.resolveEndInfo = resolve;
+            });
+        }
+
+        console.log(this.endInfo);
+
+        await sendToCentral({
+            type: `score_game`,
+            content:{
+                players: this.players,
+                winner: winner,
+                condition: condition,
+                end_info: this.endInfo
+            }
+        });
+
+        for (const p of this.players) {
+            p.ws.close(1000, "Match Ended");
+        }
+
+        activeMatches.delete(this.id);
+    }
+
+    async messageHandler(msg){
+        if(this.running){
+            this.messages.push(msg)
+        }
+        else{
+            if(msg.type === "end_info" && this.resolveEndInfo){
+                this.endInfo = msg;
+
+                this.resolveEndInfo();
+                this.resolveEndInfo = null;
+            }
+        }
+    }
+}
+
+async function sendToPlayer(ws, msg){
+    ws.send(JSON.stringify(msg));
+}
+
+function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function isConnected(player) {
+    return player.ws.readyState === 1;
+}

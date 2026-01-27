@@ -1,10 +1,14 @@
 import { CONNECTED_IPS, Authorized_Players } from "../globalVariables.js";
-import { queue1v1, queuev3, queuev4, queuev34 } from "../queue.js";
 
 export default {
   name: 'MATCHMAKE',
-  execute: async (ws, msg) => {
+  execute: async (ws, msg, ctx) => {
     const type = msg.content.type;
+
+    const queue1v1 = ctx.queue1v1;
+    const queuev3 = ctx.queuev3;
+    const queuev4 = ctx.queuev4;
+    const queuev34 = ctx.queuev34;
 
     const Player = {
       ws: ws,
@@ -27,5 +31,12 @@ export default {
         queuev34.put(Player);
         break;
     }
+
+    ws.send(JSON.stringify({
+      type: `matchmake`,
+      status: 1,
+    }));
+
+    console.log(`${Authorized_Players.get(ws.clientIP).username} Joined the ${String(type).toUpperCase()} Queue.`);
   }
 };

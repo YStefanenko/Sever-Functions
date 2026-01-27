@@ -1,3 +1,5 @@
+import { createMatch } from "./match_manager.js";
+
 // This is queue class definition
 class AsyncQueue {
     constructor() {
@@ -22,6 +24,12 @@ export const queuev3 = new AsyncQueue();
 export const queuev4 = new AsyncQueue();
 export const queuev34 = new AsyncQueue();
 
+export function startMatchmaking(){
+    matchmaking1v1();
+    matchmakingV34();
+}
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // This is 1v1 matchmaking
 export async function matchmaking1v1() {
@@ -38,13 +46,13 @@ export async function matchmaking1v1() {
                 // Remove disconnected players
                 for (let i = players.length - 1; i >= 0; i--) {
                     // Check if the player is connected (if you already have a funciton like that)
-                    if (!(await isConnected(players[i]))) {
-                        await disconnect(players[i]);
+                    if (players[i].ws.readyState != 1) {
+                        console.log(`${players[i].username} Removed from 1v1 Queue.`);
                         players.splice(i, 1);
                     }
                 }
 
-                await sleep(10_000);
+                await sleep(10000);
             }
         }
 
@@ -60,8 +68,7 @@ export async function matchmaking1v1() {
         }
 
         for (const matchPlayers of matches) {
-            gameSession("1v1", matchPlayers)
-                .catch(err => console.error("Game session error:", err));
+            createMatch("1v1", matchPlayers);
         }
     }
 } 
@@ -85,40 +92,40 @@ export async function matchmakingV34() {
                 playersV3.push(player);
             } catch (err) {
                 for (let i = playersV3.length - 1; i >= 0; i--) {
-                    if (!(await isConnected(playersV3[i]))) {
-                        await disconnect(playersV3[i]);
+                    if (players[i].ws.readyState != 1) {
+                        console.log(`${players[i].username} Removed from v3 Queue.`);
                         playersV3.splice(i, 1);
                     }
                 }
-                await sleep(1_000);
+                await sleep(1000);
             }
 
             // ---- v4 queue ----
             try {
-                const player = queueV4.getNowait();
+                const player = queuev4.getNowait();
                 playersV4.push(player);
             } catch (err) {
                 for (let i = playersV4.length - 1; i >= 0; i--) {
-                    if (!(await isConnected(playersV4[i]))) {
-                        await disconnect(playersV4[i]);
+                    if (players[i].ws.readyState != 1) {
+                        console.log(`${players[i].username} Removed from v4 Queue.`);
                         playersV4.splice(i, 1);
                     }
                 }
-                await sleep(1_000);
+                await sleep(1000);
             }
 
             // ---- v34 queue ----
             try {
-                const player = queueV34.getNowait();
+                const player = queuev34.getNowait();
                 playersV34.push(player);
             } catch (err) {
                 for (let i = playersV34.length - 1; i >= 0; i--) {
-                    if (!(await isConnected(playersV34[i]))) {
-                        await disconnect(playersV34[i]);
+                    if (players[i].ws.readyState != 1) {
+                        console.log(`${players[i].username} Removed from v34 Queue.`);
                         playersV34.splice(i, 1);
                     }
                 }
-                await sleep(1_000);
+                await sleep(1000);
             }
         }
 
@@ -134,8 +141,7 @@ export async function matchmakingV34() {
                 }
             }
 
-            gameSession("v4", selectedPlayers)
-                .catch(err => console.error("v4 session error:", err));
+            createMatch("v4", selectedPlayers);
         } else {
             const selectedPlayers = [];
 
@@ -147,8 +153,7 @@ export async function matchmakingV34() {
                 }
             }
 
-            gameSession("v3", selectedPlayers)
-                .catch(err => console.error("v3 session error:", err));
+            createMatch("v3", selectedPlayers);
         }
     }
 }

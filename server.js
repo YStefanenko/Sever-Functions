@@ -6,6 +6,12 @@ import dotenv from "dotenv";
 import { CONNECTED_IPS, Authorized_Players } from "./globalVariables.js";
 import send from "send";
 import websocketserver from "websocketserver";
+import { activeMatches } from "./match_manager.js";
+import { activeCustomMatches } from "./globalVariables.js";
+import { startMatchmaking } from "./queue.js";
+import { createCustomMatch } from "./match_manager.js";
+import { queue1v1, queuev3, queuev4, queuev34 } from "./queue.js";
+
 dotenv.config();
 
 const PORT = 1000;
@@ -26,6 +32,7 @@ const dbFunctionsLoad = fs.readdirSync("./Functions").filter(file => file.endsWi
 var funcNum = 0;
 for (const file of dbFunctionsLoad) {
   const filePath = `./Functions/${file}`;
+  console.log(filePath);
   const functionModule = await import(filePath);
   const _function = functionModule.default;
 
@@ -36,19 +43,21 @@ for (const file of dbFunctionsLoad) {
 }
 console.log("Loaded " + funcNum + " FUNCTIONS.");
 
+startMatchmaking();
+
 wss.on("connection", (ws, request) => {
   const ip = String(request.headers["x-forwarded-for"]?.split(",")[0] || request.socket.remoteAddress).replace("::ffff:", "");
-  if (CONNECTED_IPS.has(ip)) {
+  /*if (CONNECTED_IPS.has(ip)) {
     console.log(`Rejected duplicate connection from ${ip}`);
     ws.close(1008, "Only one connection per IP allowed");
     return;
-  }
+  }*/
 
   if(!Authorized_Players.has(ip)){
     ws.close(401, "Unauthorized Connection");
   }
 
-  CONNECTED_IPS.set(ip, {type: "client", ws: ws});
+  CONNECTED_IPS.set(ip, {type: "client", ws: ws, match: null});
 
   ws.clientIP = ip;
   ws.type = `client`;
@@ -80,11 +89,32 @@ wss.on("connection", (ws, request) => {
 });
 
 async function handleMessage(ws, msg) {
+  console.log(msg);
+  if(CONNECTED_IPS.get(ws.clientIP).match != null){
+    if(String(CONNECTED_IPS.get(ws.clientIP).match).includes(`CUSTOM_MATCH::`)){
+      const matchID = String(CONNECTED_IPS.get(ws.clientIP).match).replace("CUSTOM_MATCH::", '');
+      activeCustomMatches.get(matchID).messageHandler(msg);
+    }
+    else{
+      activeMatches.get(CONNECTED_IPS.get(ws.clientIP).match).messageHandler(msg);
+    }
+    return;
+  }
+
   switch (String(msg.type).toUpperCase()) {
     default:
       try{
+        var ctx;
+        switch(String(msg.type).toUpperCase()){
+          case `CREATE_ROOM`:
+            ctx = createCustomMatch;
+            break;
+          case `MATCHMAKE`:
+            ctx = {queue1v1: queue1v1, queuev3: queuev3, queuev4: queuev4, queuev34: queuev34};
+            break;
+        }
         var func = wss.funcs.get(String(msg.type).toUpperCase());
-        await func.execute(ws, msg, {sendToCentral});
+        await func.execute(ws, msg, ctx);
       }catch(e){
         console.log(e);
         ws.send(JSON.stringify({
@@ -95,8 +125,6 @@ async function handleMessage(ws, msg) {
       }
       break;
   }
-
-  console.log(msg);
 }
 
 function connectToCentralServer() {
@@ -140,24 +168,18 @@ async function handleCentralMessage(msg) {
     default:
       try{
         var func = wss.funcs.get(String(msg.type).toUpperCase());
+        console.log(func);
         await func.execute(msg);
       }catch(e){
         console.log(e);
-        centralWS.send(JSON.stringify({
-          type: `${String(msg.type).toLowerCase()}`,
-          status: 0,
-          error: `request-error`
-        }));
       }
       break;
   }
 }
 
 export function sendToCentral(payload) {
-  if (
-    centralWS &&
-    centralWS.readyState === WebSocket.OPEN
-  ) {
+  if ( centralWS && centralWS.readyState === WebSocket.OPEN) 
+  {
     centralWS.send(JSON.stringify(payload));
   }
 }
