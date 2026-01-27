@@ -338,7 +338,7 @@ export class Custom_Match {
             this.messages.push(msg)
         }
         else{
-            if(stats in msg){
+            if(`stats` in msg){
                 this.endInfo = msg;
 
                 this.resolvedEndInfo = true;
