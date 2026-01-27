@@ -50,7 +50,6 @@ export class Custom_Match {
     }
 
     async waitTick(){
-        console.log(`WAIT TICK`);
         if(this.matchStartInfo != null){
             var minPlayers;
             if(this.mode === "1v1") minPlayers = 2;
@@ -75,8 +74,6 @@ export class Custom_Match {
                 console.log(`${p.username} Disconnected from ${this.id} Custom Match.`);
             }
         }
-
-        console.log(this.players.length);
 
         if(this.players.length === 0 || this.players === null){
             this.end(`error`);
@@ -239,7 +236,6 @@ export class Custom_Match {
 
         //SENDING ALL DATA TO USERS
         const data = Object.assign({}, ...allMessages);
-        console.log("Shit: " + Object.entries(data));
 
         for (const p of this.players) {
             await sendToPlayer(p.ws, { content: data });

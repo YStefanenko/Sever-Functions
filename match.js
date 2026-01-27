@@ -145,7 +145,6 @@ export class Match {
 
         //SENDING ALL DATA TO USERS
         const data = Object.assign({}, ...allMessages);
-        console.log("Shit: " + Object.entries(data));
 
         for (const p of this.players) {
             await sendToPlayer(p.ws, { content: data });
