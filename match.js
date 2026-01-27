@@ -185,7 +185,7 @@ export class Match {
             await waitForTrue(() => this.resolvedEndInfo === true);
         }
 
-        console.log(this.endInfo);
+        console.log("FINISHED END " + this.endInfo);
 
         await sendToCentral({
             type: `score_game`,
