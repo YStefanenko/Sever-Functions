@@ -127,14 +127,14 @@ async function handleMessage(ws, msg) {
   }
 }
 
-function connectToCentralServer() {
+async function connectToCentralServer() {
   centralWS = new WebSocket(CENTRAL_SERVER_URL);
 
-  centralWS.on("open", () => {
+  centralWS.on("open", async () => {
     console.log("Connected to CENTRAL server");
 
     // identify yourself
-    sendToCentral({
+    await sendToCentral({
         type: `submit_gameserver`,
         content: {ip: `${thisIP}`, port: PORT, passkey: `${process.env.CS_ACCESSKEY}`}
       });
