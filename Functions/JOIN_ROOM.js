@@ -36,8 +36,7 @@ export default {
     const playerNameList = [];
     for (const p of players) {
         const playerName = `${p.username}`;
-        const playerList = [playerName];
-        playerNameList.push(playerList);
+        playerNameList.push(playerName);
     }
 
     ws.send(JSON.stringify({

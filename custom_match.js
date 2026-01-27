@@ -148,7 +148,7 @@ export class Custom_Match {
         }
 
         for (const p of this.spectators) {
-            await sendToPlayer(p.ws, { type: "match_start", content: {color: i, map: String(mapNum), players: playerNameList }});
+            await sendToPlayer(p.ws, { type: "match_start", content: {color: null, map: String(mapNum), players: playerNameList }});
         }
     }
 
@@ -244,6 +244,10 @@ export class Custom_Match {
         if(this.activePlayers.size === 1){
             this.end(`domination`);
             return;
+        }
+
+        if(this.activePlayers.size < 1){
+            this.end(`error`);
         }
         
 
