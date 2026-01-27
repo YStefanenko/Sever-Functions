@@ -10,6 +10,7 @@ export class Custom_Match {
         this.startPlayers = null;
         this.spectators = [];
         this.activePlayers = new Map();
+        this.startActivePlayers = new Map();
         this.running = false;
         this.tickRate = 997;
         this.interval = null;
@@ -141,6 +142,8 @@ export class Custom_Match {
             this.activePlayers.set(p.username, {peace: false});
         }
 
+        this.startActivePlayers = new Map(this.activePlayers);
+
         var i = 0;
         for (const p of this.players) {
             await sendToPlayer(p.ws, { type: "match_start", content: {color: i, map: String(mapNum), players: playerNameList }});
@@ -184,6 +187,7 @@ export class Custom_Match {
             if (!(await isConnected(p))) {
                 this.activePlayers.delete(p.username);
                 this.players = this.players.filter(player => player.username !== p.username);
+                console.log(`Player ${p.username} disconnected from match.`);
             }
         }
 
@@ -200,7 +204,7 @@ export class Custom_Match {
                   if (key === "game_end") {
                     console.log(`GAME END`);
                     const playerIndex = value.player_index;
-                    const [username, data] = Array.from(this.activePlayers)[playerIndex];
+                    const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.endInfo = value.end_info;
                     this.end(`domination`, username);
                     return;
@@ -208,13 +212,13 @@ export class Custom_Match {
                   if(key === "surrender"){
                     console.log(`SURRENDER`);
                     const playerIndex = value.player_index;
-                    const [username, data] = Array.from(this.activePlayers)[playerIndex];
+                    const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.activePlayers.delete(username);
                   }
                   if (key === "peace") {
                     console.log("PEACE");
                     const playerIndex = value.player_index;
-                    const [username, data] = Array.from(this.activePlayers)[playerIndex];
+                    const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.peaceTick = 20;
                     this.peaceOngoing = true;
                     const player = this.activePlayers.get(username);

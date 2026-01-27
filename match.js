@@ -9,6 +9,7 @@ export class Match {
         this.players = players;
         this.startPlayers = null;
         this.activePlayers = new Map();
+        this.startActivePlayers = new Map();
         this.running = false;
         this.tickRate = 997;
         this.interval = null;
@@ -54,6 +55,8 @@ export class Match {
 
             this.activePlayers.set(p.username, {peace: false});
         }
+
+        this.startActivePlayers = new Map(this.activePlayers);
 
         var i = 0;
         for (const p of this.players) {
@@ -104,7 +107,7 @@ export class Match {
                   if (key === "game_end") {
                     console.log(`GAME END`);
                     const playerIndex = value.player_index;
-                    const [username, data] = Array.from(this.activePlayers)[playerIndex];
+                    const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.endInfo = value.stats;
                     this.end(`domination`, username);
                     return;
@@ -112,13 +115,13 @@ export class Match {
                   if(key === "surrender"){
                     console.log(`SURRENDER`);
                     const playerIndex = value.player_index;
-                    const [username, data] = Array.from(this.activePlayers)[playerIndex];
+                    const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.activePlayers.delete(username);
                   }
                   if (key === "peace") {
                     console.log("PEACE");
                     const playerIndex = value.player_index;
-                    const [username, data] = Array.from(this.activePlayers)[playerIndex];
+                    const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.peaceTick = 20;
                     this.peaceOngoing = true;
                     const player = this.activePlayers.get(username);
