@@ -18,7 +18,7 @@ const PORT = 1000;
 const TICK_INTERVAL = 10000;
 const thisIP = `26.51.7.254`;
 
-const CENTRAL_SERVER_URL = `ws://26.51.7.254:9056`;
+const CENTRAL_SERVER_URL = `${process.env.CS_IP}`;
 let centralWS = null;
 
 const wss = new WebSocketServer({ port: PORT });
