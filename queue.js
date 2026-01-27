@@ -88,7 +88,7 @@ export async function matchmakingV34() {
         ) {
             // ---- v3 queue ----
             try {
-                const player = queueV3.getNowait();
+                const player = queuev3.getNowait();
                 playersV3.push(player);
             } catch (err) {
                 for (let i = playersV3.length - 1; i >= 0; i--) {
