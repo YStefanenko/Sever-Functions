@@ -114,6 +114,8 @@ export class Custom_Match {
 
         this.startPlayers = this.players;
 
+        console.log(this.players + "\n" + this.spectators);
+
         const playerNameList = [];
         for (const p of this.players) {
             var playerName;
@@ -336,7 +338,7 @@ export class Custom_Match {
             this.resolvedEndInfo = true;
         }
 
-        if(msg.type === "start_room"){
+        if(msg.type === "stats"){
             this.matchStartInfo = msg;
         }
     }
