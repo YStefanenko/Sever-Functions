@@ -91,14 +91,16 @@ wss.on("connection", (ws, request) => {
 async function handleMessage(ws, msg) {
   console.log(msg);
   if(CONNECTED_IPS.get(ws.clientIP).match != null){
-    if(String(CONNECTED_IPS.get(ws.clientIP).match).includes(`CUSTOM_MATCH::`)){
-      const matchID = String(CONNECTED_IPS.get(ws.clientIP).match).replace("CUSTOM_MATCH::", '');
-      activeCustomMatches.get(matchID).messageHandler(msg);
-    }
-    else{
-      activeMatches.get(CONNECTED_IPS.get(ws.clientIP).match).messageHandler(msg);
-    }
-    return;
+    try{
+      if(String(CONNECTED_IPS.get(ws.clientIP).match).includes(`CUSTOM_MATCH::`)){
+        const matchID = String(CONNECTED_IPS.get(ws.clientIP).match).replace("CUSTOM_MATCH::", '');
+        activeCustomMatches.get(matchID).messageHandler(msg);
+      }
+      else{
+        activeMatches.get(CONNECTED_IPS.get(ws.clientIP).match).messageHandler(msg);
+      }
+      return;
+    }catch{}
   }
 
   switch (String(msg.type).toUpperCase()) {

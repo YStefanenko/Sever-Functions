@@ -229,8 +229,6 @@ export class Custom_Match {
             }
         }catch{}
 
-        console.log(`ALIVE PLAYERS: ${this.activePlayers.size}`)
-
         //WIN CONDITIONS
         if(this.peaceOngoing){
             var peaceNum = 0;
