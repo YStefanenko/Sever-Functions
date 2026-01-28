@@ -1,4 +1,4 @@
-import { activeMatches, CONNECTED_IPS } from "./globalVariables.js";
+import { activeCustomMatches, CONNECTED_IPS } from "./globalVariables.js";
 import { sendToCentral } from "./server.js";
 
 export class Custom_Match {
@@ -277,7 +277,7 @@ export class Custom_Match {
                 }
             });
 
-            activeMatches.delete(this.id);
+            activeCustomMatches.delete(this.id);
 
             for (const p of this.players) {
                 p.ws.close(1000, "Match Ended");
@@ -343,7 +343,7 @@ export class Custom_Match {
             p.ws.close(1000, "Match Ended");
         }
 
-        activeMatches.delete(this.id);
+        activeCustomMatches.delete(this.id);
     }
 
     async messageHandler(msg){
