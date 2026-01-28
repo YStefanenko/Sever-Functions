@@ -77,6 +77,8 @@ export class Custom_Match {
 
         if(this.players.length === 0 || this.players === null){
             this.end(`error`);
+            clearInterval(this.waitInterval);
+            return;
         }
 
         const playerNameList = [];
