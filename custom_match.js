@@ -75,6 +75,7 @@ export class Custom_Match {
             }
         }
 
+        console.log(this.players.length);
         if(this.players.length === 0 || this.players === null){
             this.end(`error`);
         }
@@ -271,14 +272,6 @@ export class Custom_Match {
         this.running = false;
 
         if(condition === "error"){
-            for (const p of this.players) {
-                p.ws.close(1000, "Match Ended");
-            }
-
-            for (const p of this.spectators) {
-                p.ws.close(1000, "Match Ended");
-            }
-
             sendToCentral({
             type: `close_custom_room`,
                 content:{
@@ -287,6 +280,14 @@ export class Custom_Match {
             });
 
             activeMatches.delete(this.id);
+
+            for (const p of this.players) {
+                p.ws.close(1000, "Match Ended");
+            }
+
+            for (const p of this.spectators) {
+                p.ws.close(1000, "Match Ended");
+            }
             return;
         }
 
