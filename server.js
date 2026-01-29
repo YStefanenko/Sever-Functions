@@ -54,7 +54,7 @@ wss.on("connection", (ws, request) => {
   }
 
   if(!Authorized_Players.has(ip)){
-    ws.close(401, "Unauthorized Connection");
+    ws.close(1008, "Unauthorized Connection");
   }
 
   CONNECTED_IPS.set(ip, {type: "client", ws: ws, match: null});

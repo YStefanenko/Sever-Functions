@@ -38,123 +38,101 @@ export async function matchmaking1v1() {
     while (true) {
         let players = [];
 
-        while (players.length < 2) {
+        // 🔥 DRAIN QUEUE AS MUCH AS POSSIBLE
+        while (true) {
             try {
                 const player = queue1v1.getNowait();
-                players.push(player);
-            } catch (err) {
-                // Remove disconnected players
-                for (let i = players.length - 1; i >= 0; i--) {
-                    // Check if the player is connected (if you already have a funciton like that)
-                    if (players[i].ws.readyState != 1) {
-                        console.log(`[MATCHMAKING] ${players[i].username} Removed from 1v1 Queue.`);
-                        players.splice(i, 1);
-                    }
+                if (player.ws.readyState === 1) {
+                    players.push(player);
                 }
-
-                await sleep(10000);
+            } catch {
+                break; // queue empty
             }
         }
 
-        // Sort by score (ascending)
+        // Make all possible matches
         players.sort((a, b) => a.score - b.score);
 
-        const matches = [];
-
         while (players.length >= 2) {
-            const matchPlayers = players.slice(0, 2);
-            matches.push(matchPlayers);
-            players = players.slice(2);
-        }
-
-        for (const matchPlayers of matches) {
+            const matchPlayers = players.splice(0, 2);
             createMatch("1v1", matchPlayers);
         }
+
+        // Put leftover player back
+        players.forEach(p => queue1v1.put(p));
+
+        await sleep(200); // small cooldown, NOT 10s
     }
-} 
+}
 
 // Matchmaking 3p, 4p, 3 or 4 p
 export async function matchmakingV34() {
     console.log("[MATCHMAKING] Matchmaking v34 running");
 
-    let playersV3 = [];
-    let playersV4 = [];
-    let playersV34 = [];
-
     while (true) {
-        while (
-            playersV3.length + playersV34.length < 3 &&
-            playersV4.length + playersV34.length < 4
-        ) {
-            // ---- v3 queue ----
-            try {
-                const player = queuev3.getNowait();
-                playersV3.push(player);
-            } catch (err) {
-                for (let i = playersV3.length - 1; i >= 0; i--) {
-                    if (playersV3[i].ws.readyState != 1) {
-                        console.log(`[MATCHMAKING] ${playersV3[i].username} Removed from v3 Queue.`);
-                        playersV3.splice(i, 1);
-                    }
-                }
-                await sleep(1000);
-            }
+        const playersV3 = [];
+        const playersV4 = [];
+        const playersV34 = [];
 
-            // ---- v4 queue ----
-            try {
-                const player = queuev4.getNowait();
-                playersV4.push(player);
-            } catch (err) {
-                for (let i = playersV4.length - 1; i >= 0; i--) {
-                    if (playersV4[i].ws.readyState != 1) {
-                        console.log(`[MATCHMAKING] ${playersV4[i].username} Removed from v4 Queue.`);
-                        playersV4.splice(i, 1);
-                    }
-                }
-                await sleep(1000);
-            }
+        // --- Drain all queues ---
+        while (true) {
+            let gotPlayer = false;
 
-            // ---- v34 queue ----
+            // v3 queue
             try {
-                const player = queuev34.getNowait();
-                playersV34.push(player);
-            } catch (err) {
-                for (let i = playersV34.length - 1; i >= 0; i--) {
-                    if (playersV34[i].ws.readyState != 1) {
-                        console.log(`[MATCHMAKING] ${playersV34[i].username} Removed from v34 Queue.`);
-                        playersV34.splice(i, 1);
-                    }
-                }
-                await sleep(1000);
-            }
+                const p3 = queuev3.getNowait();
+                if (p3.ws.readyState === 1) playersV3.push(p3);
+                gotPlayer = true;
+            } catch {}
+
+            // v4 queue
+            try {
+                const p4 = queuev4.getNowait();
+                if (p4.ws.readyState === 1) playersV4.push(p4);
+                gotPlayer = true;
+            } catch {}
+
+            // v34 queue
+            try {
+                const p34 = queuev34.getNowait();
+                if (p34.ws.readyState === 1) playersV34.push(p34);
+                gotPlayer = true;
+            } catch {}
+
+            if (!gotPlayer) break; // queues empty
         }
 
-        // ---- Create match ----
-        if (playersV4.length + playersV34.length >= 4) {
-            const selectedPlayers = [];
+        // --- Create all possible 4-player matches first ---
+        while (playersV4.length + playersV34.length >= 4) {
+            const matchPlayers = [];
 
-            while (selectedPlayers.length < 4) {
-                if (playersV4.length > 0) {
-                    selectedPlayers.push(playersV4.shift());
-                } else if (playersV34.length > 0) {
-                    selectedPlayers.push(playersV34.shift());
-                }
+            while (matchPlayers.length < 4) {
+                if (playersV4.length > 0) matchPlayers.push(playersV4.shift());
+                else if (playersV34.length > 0) matchPlayers.push(playersV34.shift());
             }
 
-            createMatch("v4", selectedPlayers);
-        } else {
-            const selectedPlayers = [];
-
-            while (selectedPlayers.length < 3) {
-                if (playersV3.length > 0) {
-                    selectedPlayers.push(playersV3.shift());
-                } else if (playersV34.length > 0) {
-                    selectedPlayers.push(playersV34.shift());
-                }
-            }
-
-            createMatch("v3", selectedPlayers);
+            createMatch("v4", matchPlayers);
         }
+
+        // --- Then create all possible 3-player matches ---
+        while (playersV3.length + playersV34.length >= 3) {
+            const matchPlayers = [];
+
+            while (matchPlayers.length < 3) {
+                if (playersV3.length > 0) matchPlayers.push(playersV3.shift());
+                else if (playersV34.length > 0) matchPlayers.push(playersV34.shift());
+            }
+
+            createMatch("v3", matchPlayers);
+        }
+
+        // --- Put leftover players back into their queues ---
+        playersV3.forEach(p => queuev3.put(p));
+        playersV4.forEach(p => queuev4.put(p));
+        playersV34.forEach(p => queuev34.put(p));
+
+        // Short cooldown to prevent tight CPU loop
+        await sleep(50);
     }
 }
 
