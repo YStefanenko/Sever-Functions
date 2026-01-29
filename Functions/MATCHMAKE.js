@@ -37,6 +37,6 @@ export default {
       status: 1,
     }));
 
-    console.log(`${Authorized_Players.get(ws.clientIP).username} Joined the ${String(type).toUpperCase()} Queue.`);
+    console.log(`[MATCHMAKING] ${Authorized_Players.get(ws.clientIP).username} Joined the ${String(type).toUpperCase()} Queue.`);
   }
 };

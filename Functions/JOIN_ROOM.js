@@ -45,6 +45,6 @@ export default {
       content: {custom_map: custom_map, map_info: customMap, players: playerNameList, mode: customMatch.mode}
     }));
 
-    console.log(`${Authorized_Players.get(ws.clientIP).username} Joined the ${code} Custom Room.`);
+    console.log(`[ROOMS] ${Authorized_Players.get(ws.clientIP).username} Joined the ${code} Custom Room.`);
   }
 };

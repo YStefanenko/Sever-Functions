@@ -20,7 +20,7 @@ export class Match {
     }
 
     async start() {
-        console.log(`Starting ${this.mode} match with`, this.players.map(p => p.username));
+        console.log(`[MATCH] Starting ${this.mode} match with`, this.players.map(p => p.username));
 
         this.running = true;
 
@@ -104,7 +104,6 @@ export class Match {
             for (const orderDict of allMessages) {
               for (const [key, value] of Object.entries(orderDict)) {
                   if (key === "game_end") {
-                    console.log(`GAME END`);
                     const playerIndex = value.player_index;
                     const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.endInfo = value.stats;
@@ -112,13 +111,11 @@ export class Match {
                     return;
                   }
                   if(key === "surrender"){
-                    console.log(`SURRENDER`);
                     const playerIndex = value.player_index;
                     const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.activePlayers.delete(username);
                   }
                   if (key === "peace") {
-                    console.log("PEACE");
                     const playerIndex = value.player_index;
                     const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.peaceTick = 20;
@@ -191,7 +188,7 @@ export class Match {
             await sendToPlayer(p.ws, { content: {match_over: value}});
         }
 
-        console.log(`Ending ${this.mode} match with winner ${winner}`);
+        console.log(`[MATCH] Ending ${this.mode} match with winner ${winner}`);
 
         if(this.endInfo === null){
             await waitForTrue(() => this.resolvedEndInfo === true);

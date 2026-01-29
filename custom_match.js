@@ -25,7 +25,7 @@ export class Custom_Match {
     }
 
     async start() {
-        console.log(`Starting ${this.mode} match with`, this.players.map(p => p.username));
+        console.log(`[MATCH] Starting ${this.mode} custom match with`, this.players.map(p => p.username));
 
         this.waiting();
 
@@ -71,7 +71,6 @@ export class Custom_Match {
         for (const p of this.players) {
             if (!(await isConnected(p))) {
                 this.players = this.players.filter(player => player.username !== p.username);
-                console.log(`${p.username} Disconnected from ${this.id} Custom Match.`);
             }
         }
 
@@ -119,15 +118,6 @@ export class Custom_Match {
             elo: p.elo,
             title: p.title ?? null
         }));
-        
-        for (const p of this.players) {
-            console.log(`Player ${p.username} is in the game.`);
-        }
-        for (const p of this.spectators) {
-            console.log(`Spectator ${p.username} is in the game.`);
-        }
-
-        console.log(this.players + "\n" + this.spectators);
 
         const playerNameList = [];
         for (const p of this.players) {
@@ -188,7 +178,6 @@ export class Custom_Match {
             if (!(await isConnected(p))) {
                 this.activePlayers.delete(p.username);
                 this.players = this.players.filter(player => player.username !== p.username);
-                console.log(`Player ${p.username} disconnected from match.`);
             }
         }
 
@@ -203,7 +192,6 @@ export class Custom_Match {
             for (const orderDict of allMessages) {
               for (const [key, value] of Object.entries(orderDict)) {
                   if (key === "game_end") {
-                    console.log(`GAME END`);
                     const playerIndex = value.player_index;
                     const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.endInfo = value.end_info;
@@ -211,13 +199,11 @@ export class Custom_Match {
                     return;
                   }
                   if(key === "surrender"){
-                    console.log(`SURRENDER`);
                     const playerIndex = value.player_index;
                     const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.activePlayers.delete(username);
                   }
                   if (key === "peace") {
-                    console.log("PEACE");
                     const playerIndex = value.player_index;
                     const [username, data] = Array.from(this.startActivePlayers)[playerIndex];
                     this.peaceTick = 20;
@@ -312,7 +298,7 @@ export class Custom_Match {
             await sendToPlayer(p.ws, { content: {match_over: value}});
         }
 
-        console.log(`Ending ${this.mode} match with winner ${winner}`);
+        console.log(`[MATCH] Ending ${this.mode} match with winner ${winner}`);
 
         if(this.endInfo === null){
             await waitForTrue(() => this.resolvedEndInfo === true);

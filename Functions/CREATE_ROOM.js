@@ -31,6 +31,6 @@ export default {
       content: {players: playerNameList}
     }));
 
-    console.log(`${Authorized_Players.get(ws.clientIP).username} Created the ${code} Custom Room.`);
+    console.log(`[ROOMS] ${Authorized_Players.get(ws.clientIP).username} Created the ${code} Custom Room.`);
   }
 };

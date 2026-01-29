@@ -33,7 +33,7 @@ export async function createCustomMatch(id, mode, players, customMap = null) {
     activeCustomMatches.set(id, match);
 
     match.start().catch(async err => {
-        console.error("Match failed to start:", err);
+        console.error("Custom Match failed to start:", err);
         activeCustomMatches.delete(id);
         await sendToCentral({
             type: `close_custom_room`,

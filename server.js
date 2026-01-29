@@ -23,7 +23,7 @@ let centralWS = null;
 const wss = new WebSocketServer({ port: PORT });
 connectToCentralServer();
 
-console.log(`WebSocket server running on ${PORT}`);
+console.log(`[SERVER] WebSocket server running on ${PORT}`);
 
 wss.funcs = new Map();
 const dbFunctionsLoad = fs.readdirSync("./Functions").filter(file => file.endsWith(".js"));
@@ -40,7 +40,7 @@ for (const file of dbFunctionsLoad) {
   }
   funcNum++;
 }
-console.log("Loaded " + funcNum + " FUNCTIONS.");
+console.log("[SERVER] Loaded " + funcNum + " FUNCTIONS.");
 
 startMatchmaking();
 await import('./stats-website.js');
@@ -48,7 +48,7 @@ await import('./stats-website.js');
 wss.on("connection", (ws, request) => {
   const ip = String(request.headers["x-forwarded-for"]?.split(",")[0] || request.socket.remoteAddress).replace("::ffff:", "");
   if (CONNECTED_IPS.has(ip)) {
-    console.log(`Rejected duplicate connection from ${ip}`);
+    console.log(`[SERVER] Rejected duplicate connection from ${ip}`);
     ws.close(1008, "Only one connection per IP allowed");
     return;
   }
@@ -63,7 +63,7 @@ wss.on("connection", (ws, request) => {
   ws.type = `client`;
   ws.isAlive = true;
 
-  console.log(`${ip} Connected`);
+  //console.log(`${ip} Connected`);
 
   ws.on("pong", () => {
     ws.isAlive = true;
@@ -74,7 +74,7 @@ wss.on("connection", (ws, request) => {
     try {
       msg = JSON.parse(data);
     } catch(e) {
-      return console.log(e);
+      return console.log(`[ERR] ${e}`);
     }
 
     handleMessage(ws, msg);
@@ -84,12 +84,12 @@ wss.on("connection", (ws, request) => {
     const ip = ws.clientIP;
 
     CONNECTED_IPS.delete(ip);
-    console.log("Client disconnected:", ip);
+    //console.log("Client disconnected:", ip);
   });
 });
 
 async function handleMessage(ws, msg) {
-  console.log(msg);
+  //console.log(msg);
   if(CONNECTED_IPS.get(ws.clientIP).match != null){
     try{
       if(String(CONNECTED_IPS.get(ws.clientIP).match).includes(`CUSTOM_MATCH::`)){
@@ -118,7 +118,7 @@ async function handleMessage(ws, msg) {
         var func = wss.funcs.get(String(msg.type).toUpperCase());
         await func.execute(ws, msg, ctx);
       }catch(e){
-        console.log(e);
+        //console.log(e);
         ws.send(JSON.stringify({
           type: `${String(msg.type).toLowerCase()}`,
           status: 0,
@@ -133,7 +133,7 @@ async function connectToCentralServer() {
   centralWS = new WebSocket(CENTRAL_SERVER_URL);
 
   centralWS.on("open", async () => {
-    console.log("Connected to CENTRAL server");
+    console.log("[CS] Connected to CENTRAL server");
 
     // identify yourself
     await sendToCentral({
@@ -154,17 +154,17 @@ async function connectToCentralServer() {
   });
 
   centralWS.on("close", () => {
-    console.log("Central server connection closed. Reconnecting...");
+    console.log("[CS] Central server connection closed. Reconnecting...");
     setTimeout(connectToCentralServer, 5000);
   });
 
   centralWS.on("error", (err) => {
-    console.error("Central server error:", err.message);
+    console.error("[CS-ERR] ", err.message);
   });
 }
 
 async function handleCentralMessage(msg) {
-  console.log(msg);
+  //console.log(msg);
   if(msg.status) return;
   switch (String(msg.type).toUpperCase()) {
     default:
@@ -172,7 +172,7 @@ async function handleCentralMessage(msg) {
         var func = wss.funcs.get(String(msg.type).toUpperCase());
         await func.execute(msg);
       }catch(e){
-        console.log(e);
+        console.log(`[CS ERR] ${e}`);
       }
       break;
   }
@@ -180,11 +180,11 @@ async function handleCentralMessage(msg) {
 
 export async function sendToCentral(payload) {
   if (!centralWS || centralWS.readyState !== WebSocket.OPEN) {
-    console.log("Central server not ready.");
+    console.log("[CS ERR] Central server not ready.");
     return setTimeout(() => sendToCentral(payload), 5000);
   }
 
-  console.log(`SENT TO CENTRAL: ${JSON.stringify(payload)}`);
+  console.log(`[CS] SENT TO CENTRAL: ${JSON.stringify(payload)}`);
   centralWS.send(JSON.stringify(payload));
 }
 
@@ -195,7 +195,7 @@ setInterval(() => {
 function broadcastState() {
   wss.clients.forEach(ws => {
     if (ws.isAlive === false) {
-      console.log("Terminating dead connection:", ws.clientIP);
+      console.log("[SERVER] Terminating dead connection:", ws.clientIP);
       return ws.terminate();
     }
 
