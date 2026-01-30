@@ -17,6 +17,7 @@ export class Match {
         this.peaceOngoing = true;
         this.endInfo = null;
         this.resolvedEndInfo = false;
+        this.ended = false;
     }
 
     async start() {
@@ -157,18 +158,20 @@ export class Match {
     }
 
     async end(condition, winner = null) {
+        if(this.ended) return;
+        this.ended = true;
         let roundsPlayed = loadRounds();
         roundsPlayed++;
         saveRounds(roundsPlayed);
 
         clearInterval(this.interval);
+        activeMatches.delete(this.id);
 
         if(condition === "error"){
             for (const p of this.players) {
                 p.ws.close(1000, "Match Ended");
             }
 
-            activeMatches.delete(this.id);
             return;
         }
         
@@ -190,8 +193,11 @@ export class Match {
 
         console.log(`[MATCH] Ending ${this.mode} match with winner ${winner}`);
 
-        if(this.endInfo === null){
-            await waitForTrue(() => this.resolvedEndInfo === true);
+        if (this.endInfo === null) {
+            await Promise.race([
+                waitForTrue(() => this.resolvedEndInfo === true),
+                new Promise(res => setTimeout(res, 5000))
+            ]);
         }
 
         await sendToCentral({
@@ -209,8 +215,6 @@ export class Match {
         for (const p of this.players) {
             p.ws.close(1000, "Match Ended");
         }
-
-        activeMatches.delete(this.id);
     }
 
     async messageHandler(msg){

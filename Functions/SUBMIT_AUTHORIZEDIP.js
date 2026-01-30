@@ -9,6 +9,6 @@ export default {
     const elo = msg.content.elo;
 
     Authorized_Players.set(ip, {username: username, title: title, elo: elo});
-    console.log(`[AUTH] ${username} Whitelisted on ${process.env.name}`);
+    //console.log(`[AUTH] ${username} Whitelisted on ${process.env.name}`);
   }
 };

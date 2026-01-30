@@ -22,6 +22,7 @@ export class Custom_Match {
         this.matchStartInfo = null;
         this.gameReady = false;
         this.customMap = null;
+        this.ended = false;
     }
 
     async start() {
@@ -253,11 +254,14 @@ export class Custom_Match {
     }
 
     async end(condition, winner = null) {
+        if(this.ended) return;
+        this.ended = true;
         let roundsPlayed = loadRounds();
         roundsPlayed++;
         saveRounds(roundsPlayed);
 
         clearInterval(this.interval);
+        activeCustomMatches.delete(this.id);
 
         if(condition === "error"){
             sendToCentral({
@@ -266,8 +270,6 @@ export class Custom_Match {
                     code: this.id
                 }
             });
-
-            activeCustomMatches.delete(this.id);
 
             for (const p of this.players) {
                 p.ws.close(1000, "Match Ended");
@@ -300,8 +302,11 @@ export class Custom_Match {
 
         console.log(`[MATCH] Ending ${this.mode} match with winner ${winner}`);
 
-        if(this.endInfo === null){
-            await waitForTrue(() => this.resolvedEndInfo === true);
+        if (this.endInfo === null) {
+            await Promise.race([
+                waitForTrue(() => this.resolvedEndInfo === true),
+                new Promise(res => setTimeout(res, 5000))
+            ]);
         }
 
         await sendToCentral({
@@ -330,8 +335,6 @@ export class Custom_Match {
         for (const p of this.spectators) {
             p.ws.close(1000, "Match Ended");
         }
-
-        activeCustomMatches.delete(this.id);
     }
 
     async messageHandler(msg){
