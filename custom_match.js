@@ -256,11 +256,13 @@ export class Custom_Match {
     async end(condition, winner = null) {
         if(this.ended) return;
         this.ended = true;
+        this.gameReady = true;
         let roundsPlayed = loadRounds();
         roundsPlayed++;
         saveRounds(roundsPlayed);
 
         clearInterval(this.interval);
+        clearInterval(this.waitInterval);
         activeCustomMatches.delete(this.id);
 
         if(condition === "error"){
