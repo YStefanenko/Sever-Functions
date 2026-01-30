@@ -161,6 +161,8 @@ export class Match {
         roundsPlayed++;
         saveRounds(roundsPlayed);
 
+        clearInterval(this.interval);
+
         if(condition === "error"){
             for (const p of this.players) {
                 p.ws.close(1000, "Match Ended");
@@ -173,8 +175,6 @@ export class Match {
         if (!this.running) return;
 
         this.running = false;
-
-        clearInterval(this.interval);
 
         if(condition === "domination" && winner === null){
             winner = this.activePlayers.keys().next().value;
