@@ -15,6 +15,8 @@ dotenv.config();
 
 const PORT = process.env.port;
 const TICK_INTERVAL = 10000;
+const HEARTBEAT_INTERVAL = 30000;
+const MAX_MISSED_PONGS = 2;
 const thisIP =`${process.env.this_IP}`;
 
 const CENTRAL_SERVER_URL = `${process.env.CS_IP}`;
@@ -47,11 +49,11 @@ await import('./stats-website.js');
 
 wss.on("connection", (ws, request) => {
   const ip = String(request.headers["x-forwarded-for"]?.split(",")[0] || request.socket.remoteAddress).replace("::ffff:", "");
-  if (CONNECTED_IPS.has(ip)) {
+  /*if (CONNECTED_IPS.has(ip)) {
     console.log(`[SERVER] Rejected duplicate connection from ${ip}`);
     ws.close(1008, "Only one connection per IP allowed");
     return;
-  }
+  }*/
 
   if(!Authorized_Players.has(ip)){
     ws.close(1008, "Unauthorized Connection");
@@ -61,11 +63,13 @@ wss.on("connection", (ws, request) => {
 
   ws.clientIP = ip;
   ws.type = `client`;
+  ws.missedPongs = 0;
   ws.isAlive = true;
 
   //console.log(`${ip} Connected`);
 
   ws.on("pong", () => {
+    ws.missedPongs = 0;
     ws.isAlive = true;
   });
 
@@ -190,16 +194,16 @@ export async function sendToCentral(payload) {
 
 setInterval(() => {
   broadcastState();
-}, TICK_INTERVAL);
+}, HEARTBEAT_INTERVAL);
 
 function broadcastState() {
   wss.clients.forEach(ws => {
-    if (ws.isAlive === false) {
-      console.log("[SERVER] Terminating dead connection:", ws.clientIP);
+    if (ws.missedPongs >= MAX_MISSED_PONGS) {
+      console.log("[CONNECTION] Terminating stale connection:", ws.clientIP);
       return ws.terminate();
     }
 
-    ws.isAlive = false;
+    ws.missedPongs++;
     ws.ping();
   });
 }

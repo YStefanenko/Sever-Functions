@@ -12,7 +12,6 @@ const PORT = 5000;
 app.use(express.json());
 app.use(express.static('public'));
 
-// ===== SIMPLE AUTH (same as before, but optional) =====
 const ADMIN_USERNAME = "simple";
 const ADMIN_PASSWORD = "simple";
 
@@ -35,11 +34,6 @@ const authenticate = (req, res, next) => {
   }
 };
 
-// ======================================================
-// 🔌 REPLACE THESE WITH REAL DATA FROM YOUR GAME SERVER
-// ======================================================
-
-// These functions should later read from your real systems
 function getOngoingMatchStats() {
   return {
     normal: activeMatches.size,
@@ -50,8 +44,6 @@ function getOngoingMatchStats() {
 function getConnectedPlayers() {
   return CONNECTED_IPS.size;
 }
-
-// ================= API =================
 
 app.get('/api/stats', authenticate, (req, res) => {
   try {
@@ -73,7 +65,6 @@ app.get('/api/stats', authenticate, (req, res) => {
   }
 });
 
-// ================= PANEL =================
 
 app.get('/', (req, res) => {
   res.send(`

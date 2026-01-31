@@ -168,15 +168,15 @@ export class Match {
         activeMatches.delete(this.id);
 
         if(condition === "error"){
+            this.running = false;
             for (const p of this.players) {
                 p.ws.close(1000, "Match Ended");
             }
 
             return;
         }
-        
-        if (!this.running) return;
 
+        if (!this.running) return;
         this.running = false;
 
         if(condition === "domination" && winner === null){

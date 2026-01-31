@@ -266,6 +266,7 @@ export class Custom_Match {
         activeCustomMatches.delete(this.id);
 
         if(condition === "error"){
+            this.running = false;
             sendToCentral({
             type: `close_custom_room`,
                 content:{
