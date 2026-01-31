@@ -176,7 +176,7 @@ async function handleCentralMessage(msg) {
         var func = wss.funcs.get(String(msg.type).toUpperCase());
         await func.execute(msg);
       }catch(e){
-        console.log(`[CS ERR] ${e}`);
+        console.log(`[CS ERR] ${e} MSG RECEIVED: ${msg}`);
       }
       break;
   }
