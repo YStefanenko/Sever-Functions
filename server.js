@@ -18,6 +18,7 @@ const TICK_INTERVAL = 10000;
 const HEARTBEAT_INTERVAL = 30000;
 const MAX_MISSED_PONGS = 2;
 const thisIP =`${process.env.this_IP}`;
+const HEARTBEAT_SPREAD_MS = 5000; // Spread heartbeats over 5 seconds instead of all at once
 
 const CENTRAL_SERVER_URL = `${process.env.CS_IP}`;
 let centralWS = null;
@@ -196,17 +197,38 @@ setInterval(() => {
   broadcastState();
 }, HEARTBEAT_INTERVAL);
 
-function broadcastState() {
-  wss.clients.forEach(ws => {
+async function broadcastState() {
+  const clients = Array.from(wss.clients);
+  const delayPerClient = HEARTBEAT_SPREAD_MS / Math.max(clients.length, 1);
+
+  for (let i = 0; i < clients.length; i++) {
+    const ws = clients[i];
+
     if (ws.missedPongs >= MAX_MISSED_PONGS) {
       console.log("[CONNECTION] Terminating stale connection:", ws.clientIP);
-      return ws.terminate();
+      ws.terminate();
+      continue;
     }
 
     ws.missedPongs++;
     ws.ping();
-  });
+
+    // Spread heartbeats over time and yield to event loop
+    if (i % 10 === 0) {
+      await new Promise(res => setTimeout(res, delayPerClient * 10));
+    }
+  }
 }
+
+setInterval(() => {
+  const start = Date.now();
+  setImmediate(() => {
+    const lag = Date.now() - start;
+    if (lag > 200) {
+      console.log(`[LAG] Event loop blocked for ${lag}ms`);
+    }
+  });
+}, 1000);
 
 //Handling Rejections and Exceptions
 process.on('unhandledRejection', (reason, promise) => {
