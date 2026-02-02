@@ -18,7 +18,7 @@ const TICK_INTERVAL = 10000;
 const HEARTBEAT_INTERVAL = 30000;
 const MAX_MISSED_PONGS = 2;
 const thisIP =`${process.env.this_IP}`;
-const HEARTBEAT_SPREAD_MS = 5000; // Spread heartbeats over 5 seconds instead of all at once
+const HEARTBEAT_SPREAD_MS = 5000;
 
 const CENTRAL_SERVER_URL = `${process.env.CS_IP}`;
 let centralWS = null;

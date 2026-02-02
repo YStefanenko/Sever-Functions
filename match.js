@@ -147,6 +147,11 @@ export class Match {
             this.end(`domination`);
             return;
         }
+
+        if(this.activePlayers.size < 1 || this.players.length < 1){
+            this.end(`error`);
+            return;
+        }
         
 
         //SENDING ALL DATA TO USERS
@@ -230,7 +235,12 @@ export class Match {
 }
 
 async function sendToPlayer(ws, msg){
-    ws.send(JSON.stringify(msg));
+    if(ws.readyState != 1) return;
+    try{
+        ws.send(JSON.stringify(msg));
+    }catch{
+        return;
+    }
 }
 
 function rand(min, max) {
