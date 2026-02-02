@@ -95,6 +95,7 @@ wss.on("connection", (ws, request) => {
 
 async function handleMessage(ws, msg) {
   //console.log(msg);
+  if(!CONNECTED_IPS.has(ws.clientIP)) return;
   if(CONNECTED_IPS.get(ws.clientIP).match != null){
     try{
       if(String(CONNECTED_IPS.get(ws.clientIP).match).includes(`CUSTOM_MATCH::`)){
