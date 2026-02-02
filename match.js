@@ -32,9 +32,12 @@ export class Match {
 
     async setup() {
         var mapNum;
-        if(this.mode === "1v1") mapNum = rand(1, 30);
-        else if(this.mode === "v3") mapNum = rand(31, 33);
-        else if(this.mode === "v4") mapNum = rand(37, 39);
+        if(this.mode === "1v1"){
+            mapNum = rand(1, 30);
+            if(mapNum === 29) mapNum === 30;
+        }
+        else if(this.mode === "v3") mapNum = rand(100, 105);
+        else if(this.mode === "v4") mapNum = rand(200, 204);
 
         this.startPlayers = this.players.map(p => ({
             username: p.username,
